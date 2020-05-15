@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata: istio-run
+spec:
+  taskRef:
+    name: canary-istio-deploy
+  params:
+    - name: COMMAND
+      value: replace
+  workspaces:
+    - name: istio-manifest-dir
+      configMap:
+        name: istio

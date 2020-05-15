@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: canary-app-deploy
+spec:
+  workspaces:
+    - name: deployment-manifest-dir
+  steps:
+    - name: canary-deploy
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(workspaces.deployment-manifest-dir.path)
+      script: |
+        #!/usr/bin/env bash
+
+        # function to check the Minimum Replicas Available Status
+        # return type: "True"/"False"
+        getReadyStatus() {
+          local READY
+          i=0
+          for f in $(kubectl get deploy $1 -o jsonpath='{range .status.conditions[*]}{.reason}{"\n"}{end}')
+          do
+            if [[ $f == "MinimumReplicasAvailable" ]]; then
+              READY=$(kubectl get deploy $1 -o jsonpath='{range .status.conditions['$i']}{.status}{"\n"}{end}')
+              echo $READY
+              return
+            fi
+            ((i++))
+          done
+          echo $READY
+        }
+
+        kubectl apply -f ./
+
+        # Wait until the Deployment is ready by checking the MinimumReplicasAvailable condition.
+        for DEPLOYMENTNAME in $(kubectl get deploy -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}'); do
+          echo "Deployment status for $DEPLOYMENTNAME"
+          READY=$(getReadyStatus $DEPLOYMENTNAME)
+          while [[ "$READY" != "True" ]]; do
+            READY=$(getReadyStatus ${DEPLOYMENTNAME})
+            sleep 5
+          done
+          echo "Deployed $DEPLOYMENTNAME"
+        done
+        echo "All deployments done successfully."

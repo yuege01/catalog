@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: canary-istio-deploy
+spec:
+  workspaces:
+    - name: istio-manifest-dir
+  params:
+    - name: COMMAND
+      description: The kubectl command to execute
+      type: string
+      default: apply
+  steps:
+    - name: canary-istio
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(workspaces.istio-manifest-dir.path)
+      script: |
+        #!/usr/bin/env bash
+
+        kubectl $(params.COMMAND) -f ./
