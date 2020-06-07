@@ -1,0 +1,20 @@
+   - name: dir
+     description: options of dir
+     type: string
+     default: "$(workspaces.myworkspace.path)"
+   - name: options
+     description: options of wget
+     type: array
+     default: []
+   - name: filename
+     description: name of file we want to change
+     type: string
+     default: ""
+  workspaces:
+   - name: myworkspace
+     description: The folder where we write the wget'ed file to  
+  steps:
+    - name: wget
+      image: mwendler/wget
+      command: [wget]
+      args: ["$(params.options[*])", "$(params.url)", "$(params.diroptions[*])", "$(workspaces.myworkpsace.path)/$(params.filename)"]
